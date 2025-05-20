@@ -1,0 +1,166 @@
+:root {
+    --primary-color: #4e73df;
+    --secondary-color: #858796;
+    --success-color: #1cc88a;
+    --info-color: #36b9cc;
+    --warning-color: #f6c23e;
+    --danger-color: #e74a3b;
+    --light-color: #f8f9fc;
+    --dark-color: #5a5c69;
+}
+
+body {
+    font-family: 'Nunito', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: var(--light-color);
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Product Search Results */
+.product-item {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid #e3e6f0;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.product-item:hover {
+    background-color: #f8f9fc;
+    transform: translateY(-2px);
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+}
+
+.product-item .product-name {
+    font-weight: 600;
+    color: var(--dark-color);
+    margin-bottom: 0.25rem;
+}
+
+.product-item .product-price {
+    color: var(--primary-color);
+    font-weight: 700;
+}
+
+.product-item .product-stock {
+    font-size: 0.875rem;
+    color: var(--secondary-color);
+}
+
+/* Cart Items */
+.cart-item {
+    background: white;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid #e3e6f0;
+}
+
+.cart-item .item-name {
+    font-weight: 600;
+    color: var(--dark-color);
+}
+
+.cart-item .item-price {
+    color: var(--primary-color);
+    font-weight: 700;
+}
+
+.cart-item .quantity-control {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.cart-item .quantity-control button {
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.25rem;
+}
+
+.cart-item .quantity-control input {
+    width: 3rem;
+    text-align: center;
+}
+
+/* Checkout Section */
+#subtotal, #tax, #total {
+    color: var(--dark-color);
+    font-weight: 700;
+}
+
+#total {
+    color: var(--primary-color);
+}
+
+/* Recent Sales */
+.list-group-item {
+    border-left: none;
+    border-right: none;
+    padding: 1rem;
+}
+
+.list-group-item:first-child {
+    border-top: none;
+}
+
+.list-group-item:last-child {
+    border-bottom: none;
+}
+
+/* Payment Modal */
+#amountReceived {
+    font-size: 1.25rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+#change {
+    color: var(--success-color);
+    font-weight: 700;
+}
+
+/* Utilities */
+.text-primary {
+    color: var(--primary-color) !important;
+}
+
+.bg-primary {
+    background-color: var(--primary-color) !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    body {
+        overflow: auto;
+    }
+    
+    .container-fluid {
+        padding: 0;
+    }
+    
+    .col-md-4, .col-md-8 {
+        padding: 1rem;
+    }
+}
+
+/* Custom Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-out;
+} 

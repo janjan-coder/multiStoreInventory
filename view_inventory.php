@@ -1,0 +1,296 @@
+<?php
+session_start();
+include 'db.php';
+
+// Check if user is logged in
+if (!isset($_SESSION['username'])) {
+    header("Location: index.php");
+    exit();
+}
+
+$searchResults = false;
+$store_id = '';
+$barcode = '';
+$showStoreSelector = true;
+
+// Initialize store access based on user role
+$userRole = $_SESSION['role'] ?? '';
+$userStoreId = $_SESSION['store_id'] ?? 0;
+
+// Fetch stores for dropdown based on user role
+if ($userRole === 'admin') {
+    $storeOptions = $conn->query("SELECT * FROM stores WHERE id = " . intval($userStoreId));
+    $showStoreSelector = false; // Always hide selector for admin
+} else {
+    $storeOptions = $conn->query("SELECT * FROM stores ORDER BY name");
+    $showStoreSelector = true;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $store_id = $_POST['store_id'];
+    $barcode = trim($_POST['barcode']);
+
+    // Basic SQL
+    $sql = "SELECT p.name as product_name, p.barcode, p.size, i.quantity, s.name AS store_name 
+            FROM products p
+            JOIN inventory i ON p.id = i.product_id
+            JOIN stores s ON i.store_id = s.id
+            WHERE 1";
+
+    // For admin users, only show their store's inventory
+    if ($userRole === 'admin') {
+        $sql .= " AND i.store_id = " . intval($userStoreId);
+    } else {
+        // Filter by store if selected
+        if (!empty($store_id)) {
+            $sql .= " AND i.store_id = " . intval($store_id);
+        }
+    }
+
+    // Filter by barcode if provided
+    if (!empty($barcode)) {
+        $sql .= " AND p.barcode = '" . $conn->real_escape_string($barcode) . "'";
+    }
+
+    $sql .= " ORDER BY p.name ASC";
+
+    $result = $conn->query($sql);
+    $searchResults = true;
+}
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Inventory - Inventory Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-color: #4e73df;
+            --secondary-color: #858796;
+            --success-color: #1cc88a;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f8f9fc 0%, #e3e6f0 100%);
+            min-height: 100vh;
+            font-family: 'Nunito', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 1rem;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            border: none;
+            margin-bottom: 2rem;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #224abe 100%);
+            color: white;
+            border-radius: 1rem 1rem 0 0 !important;
+            padding: 1.5rem;
+        }
+
+        .card-header h3 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .card-body {
+            padding: 2rem;
+        }
+
+        .form-control, .form-select {
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            border: 1px solid #d1d3e2;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.25rem rgba(78, 115, 223, 0.25);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .btn-primary:hover {
+            background-color: #2e59d9;
+            border-color: #2e59d9;
+            transform: translateY(-1px);
+        }
+
+        .table {
+            margin-bottom: 0;
+        }
+
+        .table th {
+            background-color: #f8f9fc;
+            color: var(--primary-color);
+            font-weight: 600;
+            border-bottom: 2px solid #e3e6f0;
+        }
+
+        .table td {
+            vertical-align: middle;
+            color: var(--secondary-color);
+        }
+
+        .table tbody tr:hover {
+            background-color: #f8f9fc;
+        }
+
+        .back-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .back-link:hover {
+            color: #2e59d9;
+            transform: translateX(-5px);
+        }
+
+        .search-form {
+            background-color: #f8f9fc;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: var(--secondary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .input-group-text {
+            background-color: #f8f9fc;
+            border-right: none;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 2rem;
+            color: var(--secondary-color);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="dashboard.php" class="back-link">
+            <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
+        </a>
+
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="bi bi-box-seam me-2"></i>View Inventory</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" class="search-form">
+                    <div class="row g-3">
+                        <?php if ($userRole === 'admin'): ?>
+                            <!-- For admin users, show their store name -->
+                            <div class="col-md-5">
+                                <label class="form-label">Store</label>
+                                <input type="text" class="form-control" value="<?= htmlspecialchars($storeOptions->fetch_assoc()['name'] ?? '') ?>" readonly>
+                                <input type="hidden" name="store_id" value="<?= $userStoreId ?>">
+                            </div>
+                        <?php elseif ($showStoreSelector): ?>
+                            <!-- For superadmin, show store selector -->
+                            <div class="col-md-5">
+                                <label for="store_id" class="form-label">Store</label>
+                                <select name="store_id" id="store_id" class="form-select">
+                                    <option value="">-- All Stores --</option>
+                                    <?php while ($store = $storeOptions->fetch_assoc()): ?>
+                                        <option value="<?= $store['id'] ?>" <?= $store['id'] == $store_id ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($store['name']) ?>
+                                        </option>
+                                    <?php endwhile; ?>
+                                </select>
+                            </div>
+                        <?php endif; ?>
+                        <div class="col-md-5">
+                            <label for="barcode" class="form-label">Barcode</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-upc-scan"></i>
+                                </span>
+                                <input type="text" class="form-control" id="barcode" name="barcode" 
+                                       value="<?= htmlspecialchars($barcode) ?>" placeholder="Enter barcode">
+                            </div>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-search me-2"></i>Search
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <?php if ($searchResults): ?>
+                    <?php if ($result && $result->num_rows > 0): ?>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Barcode</th>
+                                        <th>Product Name</th>
+                                        <th>Size</th>
+                                        <th>Quantity</th>
+                                        <th>Store</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php while ($row = $result->fetch_assoc()): ?>
+                                        <tr>
+                                            <td><?= htmlspecialchars($row['barcode']) ?></td>
+                                            <td><?= htmlspecialchars($row['product_name']) ?></td>
+                                            <td><?= htmlspecialchars($row['size'] ?? 'N/A') ?></td>
+                                            <td>
+                                                <span class="badge bg-<?= $row['quantity'] < 10 ? 'danger' : 'success' ?>">
+                                                    <?= htmlspecialchars($row['quantity']) ?>
+                                                </span>
+                                            </td>
+                                            <td><?= htmlspecialchars($row['store_name']) ?></td>
+                                        </tr>
+                                    <?php endwhile; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php else: ?>
+                        <div class="no-results">
+                            <i class="bi bi-search me-2"></i>No records found.
+                        </div>
+                    <?php endif; ?>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
